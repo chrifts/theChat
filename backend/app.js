@@ -1,5 +1,5 @@
-require('dotenv').config();
-
+var envi = require('dotenv').config();
+console.log(envi);
 var models = require('./database/models');
 const WebSocket = require('ws');
 const jwt = require('jsonwebtoken')
