@@ -98,7 +98,7 @@ function authToken(req, res, next) {
     if(token == null) {
         return res.sendStatus(401)
     }
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+    jwt.verify(token, envi.parsed.ACCESS_TOKEN_SECRET, (err, user) => {
         if (err) {
             console.log(err);
             return res.sendStatus(403)
@@ -113,7 +113,7 @@ app.post('/login', function (req, res) {
     const tel = req.body.tel;
     
     let User = models.User;
-    console.log(process.env.ACCESS_TOKEN_SECRET, 'ACA TOKEN');
+    console.log(envi.parsed.ACCESS_TOKEN_SECRET, 'ACA TOKEN');
     User.findOne({
         where: {
           prefix: prefix,
@@ -121,7 +121,7 @@ app.post('/login', function (req, res) {
           verifyCode: 'success'
         }
       }).then((user) => {
-            const accessToken = jwt.sign(user.dataValues, process.env.ACCESS_TOKEN_SECRET)
+            const accessToken = jwt.sign(user.dataValues, envi.parsed.ACCESS_TOKEN_SECRET)
             res.json({accessToken: accessToken});
             //console.log(user.dataValues.password);
             // bcrypt.compare(req.body.pass, user.dataValues.password, function(error, passed) {
