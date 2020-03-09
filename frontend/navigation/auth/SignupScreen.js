@@ -188,7 +188,7 @@ class SignupScreen extends React.Component {
       })
       .catch((error) => {
         // handle error
-        Alert.alert('Login error!');
+        Alert.alert('Login error! '+error.message);
         console.log(error);
       })
       .finally(function () {

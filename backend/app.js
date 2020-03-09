@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 var models = require('./database/models');
 const WebSocket = require('ws');
 const jwt = require('jsonwebtoken')
@@ -112,6 +113,7 @@ app.post('/login', function (req, res) {
     const tel = req.body.tel;
     
     let User = models.User;
+    console.log(process.env.ACCESS_TOKEN_SECRET);
     User.findOne({
         where: {
           prefix: prefix,
