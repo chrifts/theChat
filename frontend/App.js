@@ -2,20 +2,18 @@ import React, { Component } from 'react';
 import { StatusBar } from 'react-native';
 import { Router, Scene, Tabs, ActionConst, Actions, Stack } from 'react-native-router-flux';
 import MensajesScreen from './navigation/MensajesScreen';
-//import ConfigScreen from './navigation/ConfigScreen';
+import ConfigScreen from './navigation/ConfigScreen';
 import TheChat from './navigation/TheChat';
-//import LoginScreen from './navigation/auth/LoginScreen';
+import NotifTest from './navigation/NotifTest';
 import SignupScreen from './navigation/auth/SignupScreen';
 import CheckScreen from './navigation/CheckScreen';
-//import CreateProfile from './navigation/CreateProfile';
+import CreateProfile from './navigation/CreateProfile';
 import { Icon } from 'react-native-elements'
 
 
 import AddChatView from './components/AddChatView'
 import { Button, Alert, TouchableOpacity, View } from 'react-native';
 import GoTo from './constants/navigate';
-//import NotifTest from './navigation/NotifTest';
-//import * as Cellular from 'expo-cellular';
 StatusBar.setBarStyle('dark-content', true);
 
 class App extends Component {
@@ -28,7 +26,7 @@ class App extends Component {
   disc = () => {
     return (
       <Icon 
-        name='ios-disc' 
+        name='directions' 
         size={18}
       />
     );
@@ -43,7 +41,7 @@ class App extends Component {
         }
       >
         <Icon 
-        name='ios-chatboxes' 
+        name='directions' 
         size={18}
       />
       </Button>
@@ -54,7 +52,7 @@ class App extends Component {
   settings = () => {
     return (
       <Icon 
-        name='ios-settings' 
+        name='directions' 
         size={18}
       />
     )
@@ -72,8 +70,7 @@ class App extends Component {
           <Scene key='chat' component={TheChat} hideNavBar={false} navigationBarStyle={{ backgroundColor: '#f6f6f6'}}/>
           <Scene key='new_chat' reset={false} component={AddChatView} hideNavBar={false} title='Add chat'/>
           <Scene key='signup' component={SignupScreen} hideNavBar={true} title='' />
-          {/* <Scene key='login' component={LoginScreen} hideNavBar={true} title='Login'/> */}
-          {/* <Scene key='create_profile' component={CreateProfile} hideNavBar={true} title='Profile' gestureEnabled={false}/> */}
+          <Scene key='create_profile' component={CreateProfile} hideNavBar={true} title='Profile' gestureEnabled={false}/>
           <Tabs
             key='TabBar'
             //tabBarComponent={CustomTab}
@@ -88,8 +85,8 @@ class App extends Component {
               title='Chats'
               backToInitial={true}
             />
-            {/* <Scene key='status' icon={this.settings} component={ConfigScreen} hideNavBar={false} title='Settings'/> */}
-            {/* <Scene key='notif' icon={this.settings} component={NotifTest} hideNavBar={false} title='Notiftest'/>*/}
+            <Scene key='status' icon={this.settings} component={ConfigScreen} hideNavBar={false} title='Settings'/>
+            <Scene key='notif' icon={this.settings} component={NotifTest} hideNavBar={false} title='Notiftest'/>
           </Tabs>
         </Scene>
       </Router>

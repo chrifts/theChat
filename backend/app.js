@@ -58,17 +58,19 @@ wss.on('connection', (ws, req) => {
             //ws.protocol se quiere salir de req.url main
             if(req.url !== '/user_main/'+ws.protocol) {
                 console.log('entro a url !== a ws.protocol')
-                channels[req.url].forEach(function each(client, ix) {
-                    console.log(client, ix, ws)
-                    if(client.protocol == ws.protocol) {
-                        delete channels[req.url][ix];
-                        //CHECK EMPTY ARRAY
-                        console.log('channel to delete ' + req.url)
-                        if(channels[req.url].length == 0) {
-                            delete channels[req.url] 
+                if(channels[req.url]){
+                    channels[req.url].forEach(function each(client, ix) {
+                        console.log(client, ix, ws)
+                        if(client.protocol == ws.protocol) {
+                            delete channels[req.url][ix];
+                            //CHECK EMPTY ARRAY
+                            console.log('channel to delete ' + req.url)
+                            if(channels[req.url].length == 0) {
+                                delete channels[req.url] 
+                            }
                         }
-                    }
-                });
+                    });
+                }
             } else {
                 delete channels[req.url] 
             }
@@ -158,6 +160,7 @@ app.post('/add_user_to_main_view', authToken, function (req, res) {
 });
 
 app.get('/user_chats', authToken, async function (req, res) {
+    
     let Relations = models.Relation;
     let User = models.User;
     let user_id = req.user.id

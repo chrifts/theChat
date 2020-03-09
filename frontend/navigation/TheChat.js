@@ -1,13 +1,8 @@
 import React from 'react'
 import axios from 'axios';
-import { FlatList, StyleSheet, View, Text, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity, Alert, Button, PixelRatio, Keyboard, BackHandler } from 'react-native';
+import { FlatList, StyleSheet, View, Text, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity, Keyboard, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
-import { Header, Left, Right, Button as Btn, Icon, Body, Title } from 'native-base';
 import { WS_HOST, WS_PORT, API_URL_PORT } from '../constants/Config'
-import { Actions } from 'react-native-router-flux';
-
-var backButtonPressedOnceToExit = false;
-var user_id;
 
 class TheChat extends React.Component {
   
@@ -40,7 +35,7 @@ class TheChat extends React.Component {
       ws_to_main: new WebSocket(URL_TO_MAIN, this.props.navigation.state.params.user_id.toString()),
       thisChannel: CHN,
       message: '',
-      keyBoardHidden: '',
+      keyBoardHidden: ''
     }
     //console.log(this.state);
     
@@ -58,14 +53,13 @@ class TheChat extends React.Component {
     };
   };
 
-  componentWillUnmount(){
-    console.log('unmounted')
-    //Alert.alert('Unmounted')
+  componentWillUnmount(){    
     this.state.ws.close();
     this.state.ws_to_main.close();
     this.keyboardDidShowListener.remove();
     this.keyboardDidHideListener.remove();
     this._isMounted = false;
+    //await this.readMessages();
   }
 
   _keyboardDidShow() {
@@ -159,13 +153,6 @@ class TheChat extends React.Component {
       .finally(function () {
         // always executed
       });
-  }
-
-  static onExit = (params) => {
-    
-    console.log(this.props)
-    //let URL = 'ws://'+WS_HOST+':'+WS_PORT+'/user_main/'+user_id;
-    //new WebSocket(URL)
   }
 
   componentDidMount() {
@@ -320,6 +307,8 @@ class TheChat extends React.Component {
   keyExtractor = (item, index) => index.toString();
 
   render() {
+    const windowHeight = Dimensions.get('window').height;
+
     return (
       <View style={styles.container}>
         <FlatList
@@ -328,7 +317,10 @@ class TheChat extends React.Component {
           renderItem={this.renderItem}
           inverted
         />
-        <KeyboardAvoidingView behavior="padding">
+        <KeyboardAvoidingView 
+          behavior="padding"
+          keyboardVerticalOffset={54}
+        >
           <View style={styles.footer}>
             <TextInput
               value={this.state.message}
@@ -354,6 +346,13 @@ class TheChat extends React.Component {
   }
 }
 
+// var pxr;
+// PixelRatio.get() === 1 ? pxr = 120 : null;
+// PixelRatio.get() === 1.5 ? pxr = 70 : null;
+// PixelRatio.get() === 2 ? pxr = 70 : null;
+// PixelRatio.get() === 3 ? pxr = 70 : null;
+// PixelRatio.get() === 3.5 ? pxr = 70 : null;
+
 const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
@@ -370,7 +369,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 18,
     flex: 1,
-    marginBottom: PixelRatio.get() == 3 ? 120 : 70
+    //marginBottom: pxr,
   },
   container: {
     flex: 1,

@@ -9,12 +9,13 @@ import GoTo from '../constants/navigate';
 import AddChat from '../components/AddChat'
 import { Icon } from 'react-native-elements'
 import { Actions } from 'react-native-router-flux';
+import update from 'immutability-helper';
 
 let navigated = false;
 
 
 class MensajesScreen extends React.Component {
-  
+  _isMounted = false;
   constructor(props){
     super(props);
     this.state = {
@@ -33,6 +34,10 @@ class MensajesScreen extends React.Component {
   _onRefresh = () => {
     this.setState({refreshing: true});
     this.getUserChats();
+  }
+
+  onEnter(params) {
+    console.log(params)
   }
 
   static navigationOptions = ({ navigation, navigationOptions }) => {
@@ -140,11 +145,12 @@ class MensajesScreen extends React.Component {
   }
 
   renderItem = ({item}) => {
+    
     return (
       <TouchableOpacity
         ref={component => this._touchable = component}
         onPress={() => {
-          
+          console.log(item)
           let params = 
             {
               user_id: this.state.user_id,
@@ -152,10 +158,18 @@ class MensajesScreen extends React.Component {
               itemData: item,
               writer: this.state.user_data
             }
-            
-            //  this.state.ws.close();
-            GoTo('chat', params);
-            
+            this.state.chats.map((IT, ix) => {
+              if(IT.id == item.id) {
+                console.log(ix, 'AQUI IX')
+                var obj = {};
+                obj[ix] = {unreaded: {$set: 0}};
+                this.setState({
+                  chats: update(this.state.chats, obj)
+                })
+                GoTo('chat', params);
+                
+              }
+            })
         }}
       >
         <ListItem avatar>
@@ -178,7 +192,7 @@ class MensajesScreen extends React.Component {
   drawList = () => {
       return (     
         //User ScrollView for enable scroll refresh 
-        <ScrollView style={{flex: 1}}
+        <View style={{flex: 1}}
           refreshControl={
           <RefreshControl
             refreshing={this.state.refreshing}
@@ -190,7 +204,7 @@ class MensajesScreen extends React.Component {
             renderItem={this.renderItem}
             keyExtractor={this.keyExtractor}
           /> : <Text>No chats yet. Add some</Text>}
-        </ScrollView>                            
+        </View>                            
       );
   }
 
@@ -201,6 +215,10 @@ class MensajesScreen extends React.Component {
   }
 
   async componentDidMount() {
+    this._isMounted = true;
+    this._onFocusListener = this.props.navigation.addListener('didFocus', (payload) => {
+      this._onRefresh();
+    });
     await this.getUserChats();
     
     if(!this.state.isFetching) {
@@ -231,18 +249,24 @@ class MensajesScreen extends React.Component {
       }
 
       this.state.ws.onclose = () => {
-        Alert.alert('WS disconected from mensajesScreen. Reconnecting...');
+        //Alert.alert('WS disconected from mensajesScreen. Reconnecting...');
         console.log('WS disconected from mensajesScreen. Reconnecting...');
-        this.setState({
-          ws: new WebSocket(this.state.ws_url),
-        })
+        // this.setState({
+        //   ws: new WebSocket(this.state.ws_url),
+        // })
+        if(this._isMounted){
+          this._onRefresh()
+        }
       }
       this.state.ws.onerror = () => {
-        Alert.alert('WS ERROR from mensajesScreen. Reconnecting...');
+        //Alert.alert('WS ERROR from mensajesScreen. Reconnecting...');
         console.log('WS ERROR from mensajesScreen. Reconnecting...');
-        this.setState({
-          ws: new WebSocket(this.state.ws_url),
-        })
+        // this.setState({
+        //   ws: new WebSocket(this.state.ws_url),
+        // })
+        if(this._isMounted){
+          this._onRefresh()
+        }
       }
     }
   }

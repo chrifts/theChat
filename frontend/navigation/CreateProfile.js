@@ -182,7 +182,8 @@ class CreateProfile extends React.Component {
     item: {
       marginTop: 40,
       borderBottomColor: '#BBB',
-      borderBottomWidth: 0.5
+      borderBottomWidth: 0.5,
+      color: 'black'
     },
   })
   

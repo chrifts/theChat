@@ -9,6 +9,7 @@ import { API_URL_PORT } from '../../constants/Config'
 import GoTo from '../../constants/navigate';
 import {Platform} from 'react-native';
 //import Constants from 'expo-constants';
+import DeviceInfo from 'react-native-device-info';
 //import { Notifications } from 'expo';
 //import * as Permissions from 'expo-permissions';
 import Contacts from 'react-native-contacts';
@@ -31,7 +32,7 @@ class SignupScreen extends React.Component {
         verifyCode: '',
         smsCode: '',
         user_id: '',
-        //deviceId: Constants.installationId,
+        deviceId: DeviceInfo.getDeviceId(),
         countryCodes: [],
         pushToken: ''
     }
@@ -417,7 +418,8 @@ const styles = StyleSheet.create({
     marginTop: 20,
     height: 30,
     borderBottomColor: '#BBB',
-    borderBottomWidth: 0.5
+    borderBottomWidth: 0.5,
+    color: 'black'
   },
   lastItem: {
     marginTop: 20,

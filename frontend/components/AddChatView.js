@@ -6,7 +6,6 @@ import {API_URL_PORT} from '../constants/Config';
 import { Left, Body, Right, Thumbnail, ListItem, Text } from 'native-base';
 import { TouchableOpacity, ScrollView } from 'react-native-gesture-handler';
 import GoTo from '../constants/navigate';
-//import UpdateContacts from '../constants/UpdateContacts'
 import Contacts from 'react-native-contacts';
 import { Icon } from 'react-native-elements'
 
@@ -26,6 +25,7 @@ class AddChatView extends React.Component {
 
   _setState = async () => {
     const contacts = await AsyncStorage.getItem('state');
+    console.log(JSON.parse(contacts));
     if(contacts) {
       this.setState(JSON.parse(contacts))
     }
@@ -82,7 +82,8 @@ class AddChatView extends React.Component {
         }
         const response = await axios(axios_config)
         console.log(response, 'aca axios 2')
-        if(response.status == 200) {
+        console.log(response, 'RES104')
+        if(response.status == 200 && response.data !== "No relations to add") {
           result = true;
           let axios_config = {
             method: 'GET',
@@ -94,6 +95,7 @@ class AddChatView extends React.Component {
           }
           
           const response = await axios(axios_config)
+          
             if(response.status == 200) {
                 if(response.data.user_data) {
                   // return {
@@ -101,12 +103,13 @@ class AddChatView extends React.Component {
                   //   user_id: response.data.user_id,
                   //   chats: response.data.data,
                   // }
+                  
                   this.setState( {
                     user_data: response.data.user_data,
                     user_id: response.data.user_id,
                     chats: response.data.data,
                   })
-                  console.log(this.state, 'LINEA 88');
+                  
                   this._storeChats(this.state);
                 }
               } else {
@@ -114,7 +117,12 @@ class AddChatView extends React.Component {
               console.log('network error')
             }  
         } else {
-          result = false;
+          console.log(this.state, '');
+          //MANEJAR SITIACION. VER BACKEND! TODO
+          //cuando no encuentra rel to add, utiliza el storage que tenia el celu. 
+          //Pueden quedar guardados contactos cuando no existe esa relacion
+          //this.setState({chats: []})
+          this._storeChats(this.state);
         } 
       })      
     }
@@ -164,10 +172,11 @@ class AddChatView extends React.Component {
             user_id: this.state.user_data.id,
             receiver: params.receiver,
             itemData: params.rec_data,
-            writer: this.state.user_data
+            writer: this.state.user_data,
+            fromAdd: true
           }
           //Actions.replace('messages', params.rec_data  );
-          GoTo('chat', paramsToChat)
+          GoTo('messages', paramsToChat, 'navigate')
         })
         .catch((error) => {
           // handle error
@@ -180,7 +189,7 @@ class AddChatView extends React.Component {
   }
 
   renderItem = ({item}) => {
-    console.log(item, 'aca user to add')
+    //console.log(item, 'aca user to add')
     //receiver: item.contact_id, user_id, rel_id: item.id
     return (
       <TouchableOpacity
@@ -235,8 +244,8 @@ class AddChatView extends React.Component {
       
 
   async componentDidMount() {
+    await this.asyncCall(); 
     await this._setState();
-    await this.asyncCall();
     
   }
   
