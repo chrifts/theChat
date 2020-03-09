@@ -113,7 +113,7 @@ app.post('/login', function (req, res) {
     const tel = req.body.tel;
     
     let User = models.User;
-    console.log(process.env.ACCESS_TOKEN_SECRET);
+    console.log(process.env.ACCESS_TOKEN_SECRET, 'ACA TOKEN');
     User.findOne({
         where: {
           prefix: prefix,
