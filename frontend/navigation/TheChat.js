@@ -1,8 +1,10 @@
 import React from 'react'
 import axios from 'axios';
-import { FlatList, StyleSheet, View, Text, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity, Keyboard, Dimensions } from 'react-native';
+import { FlatList, StyleSheet, View, Text, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity, Keyboard, Dimensions, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
 import { WS_HOST, WS_PORT, API_URL_PORT } from '../constants/Config'
+
+const {StatusBarManager} = NativeModules;
 
 class TheChat extends React.Component {
   
@@ -35,7 +37,8 @@ class TheChat extends React.Component {
       ws_to_main: new WebSocket(URL_TO_MAIN, this.props.navigation.state.params.user_id.toString()),
       thisChannel: CHN,
       message: '',
-      keyBoardHidden: ''
+      keyBoardHidden: '', 
+      statusBarHeight: 0
     }
     //console.log(this.state);
     
@@ -55,6 +58,7 @@ class TheChat extends React.Component {
 
   async componentWillUnmount(){    
     this.state.ws.close();
+    this.statusBarListener.remove();
     this.state.ws_to_main.close();
     this.keyboardDidShowListener.remove();
     this.keyboardDidHideListener.remove();
@@ -158,6 +162,12 @@ class TheChat extends React.Component {
   componentDidMount() {
     //this.getReceiverPushToken();
     this._isMounted = true;
+
+    StatusBarManager.getHeight((statusBarFrameData) => {
+      this.setState({statusBarHeight: statusBarFrameData.height});
+    });
+
+
     this.readMessages();
     this.keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
@@ -319,7 +329,7 @@ class TheChat extends React.Component {
         />
         <KeyboardAvoidingView 
           behavior="padding"
-          keyboardVerticalOffset={54}
+          keyboardVerticalOffset={44 + this.state.statusBarHeight}
         >
           <View style={styles.footer}>
             <TextInput
