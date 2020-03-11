@@ -1,4 +1,5 @@
-var envi = require('dotenv').config();
+const path = require('path')
+var envi = require('dotenv').config({ path: path.resolve(__dirname, '../.env') })
 console.log(envi);
 var models = require('./database/models');
 const WebSocket = require('ws');
@@ -168,93 +169,74 @@ app.get('/user_chats', authToken, async function (req, res) {
     let user_id = req.user.id
     let theUser = await User.findOne({where: user_id});
     let user_data = theUser.dataValues;
-    console.log(user_data);
     let onMainView = req.query.mainView == 'true' ? true : false;
-
-    //console.log(onMainView);
-    Relations.findAll(
+    
+    const rel_chats = await Relations.findAll(
         onMainView ? {where: {user_id: user_id, onMainView: '1'}} : {where: {user_id: user_id}}
-    ).then((rel_chats) => {
-        //console.log(rel_chats)
-        if(rel_chats.length > 0) {
-            let contacts_id = [];
-            rel_chats.forEach((element, i) => {
-                contacts_id.push(element.dataValues.contact_id)
-            })
-            User.findAll({
-                where: { id: contacts_id, verifyCode: "success" }
-            })
-            .then((result) => {
-                let Message = models.Message;
-                result.forEach((ele, ix) => {
-                    result[ix].dataValues.lastMessage = []
-                    result[ix].dataValues.allMessages = []
-                })
-                result.forEach((ele, ix) => {
-                    let CHN;
-                    if(req.user.id > ele.dataValues.id) {
-                        CHN = req.user.id +'-'+ ele.dataValues.id;
-                      } else {
-                        CHN = ele.dataValues.id +'-'+ req.user.id;
-                      }
-                    Message.findAll({
-                        where: {channel: CHN},
-                        order: [
-                            ['createdAt', 'ASC'],
-                        ]
-                    })
-                    .then(messages => {
-                        //console.log(messages, 'aca POTATO');
-                        result[ix].dataValues.allMessages.push(messages);
-                        if(messages.length > 0) {
-                            if(ix + 1 == result.length) {
-                                result[ix].dataValues.lastMessage.push([messages[messages.length -1].dataValues.message, messages[messages.length -1].dataValues.createdAt])
-                                //console.log(result)
-                                res.json({
-                                    user_data: user_data,
-                                    user_id: user_id,
-                                    data: result,
-                                });
-                            } else {
-                                result[ix].dataValues.lastMessage.push([messages[messages.length -1].dataValues.message, messages[messages.length -1].dataValues.createdAt])
-                            }
-                        } else {
-                        	if(ix + 1 == result.length) {
-                                res.json({
-                                    user_data: user_data,
-                                    user_id: user_id,
-                                    data: result,
-                                });
-			                }
-			            }
-                    })
-                    .catch(err => {
-                        if(ix + 1 == result.length) {
-                            console.log(err);
-                            res.status(400).send(err);
-                            throw new Error(err);
-                        } else {
-                            console.log(err)
-                        }
-                    })
-                })
-                //console.log(result); 
-            })
-            .catch((error) => {
-		        res.status(400).send(error);    
-                throw new Error(error)
-            })
-        } else {
-            res.json({
-                user_data: user_data,
-                user_id: user_id,
-                data: null
-            });
-        }
+    )
+
+    if(rel_chats.length > 0) {
+        let contacts_id = [];
+        rel_chats.forEach((element, i) => {
+            contacts_id.push(element.dataValues.contact_id)
+        })
+
+        const result = await User.findAll({
+            where: { id: contacts_id, verifyCode: "success" }
+        })
         
-    }).catch((error) => {
-        res.json(error);
-    });
+        let Message = models.Message;
+
+        result.forEach((ele, ix) => {
+            result[ix].dataValues.lastMessage = []
+            result[ix].dataValues.allMessages = []
+        })
+
+        result.forEach(async (ele, ix) => {
+            let CHN;
+            if(req.user.id > ele.dataValues.id) {
+                CHN = req.user.id +'-'+ ele.dataValues.id;
+            } else {
+                CHN = ele.dataValues.id +'-'+ req.user.id;
+            }
+            
+            const messages = await Message.findAll({
+                where: {channel: CHN},
+                order: [
+                    ['createdAt', 'ASC'],
+                ]
+            });
+                
+            result[ix].dataValues.allMessages.push(messages);
+            if(messages.length > 0) {
+                if(ix + 1 == result.length) {
+                    result[ix].dataValues.lastMessage.push([messages[messages.length -1].dataValues.message, messages[messages.length -1].dataValues.createdAt])
+                    //console.log(result)
+                    res.json({
+                        user_data: user_data,
+                        user_id: user_id,
+                        data: result,
+                    });
+                } else {
+                    result[ix].dataValues.lastMessage.push([messages[messages.length -1].dataValues.message, messages[messages.length -1].dataValues.createdAt])
+                }
+            } else {
+                if(ix + 1 == result.length) {
+                    res.json({
+                        user_data: user_data,
+                        user_id: user_id,
+                        data: result,
+                    });
+                }
+            }
+        })
+    } else {
+        res.json({
+            user_data: user_data,
+            user_id: user_id,
+            data: null
+        });
+    }
 });
 
 app.post('/read_messages', authToken, async function (req, res) {

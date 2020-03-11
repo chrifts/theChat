@@ -26,7 +26,7 @@ class MensajesScreen extends React.Component {
       isFetching: true,
       user_id: '',
       ws: '',
-      ShouldRefresh: false
+      backRefresh: false,
     }
     //this.getUserChats();
   }
@@ -78,7 +78,7 @@ class MensajesScreen extends React.Component {
       
       const response = await axios(axios_config)
       if(response.status = '200') {
-        let URL = 'ws://'+WS_HOST+':'+WS_PORT+'/user_main/'+response.data.user_id;
+        
         if(response.data.data) {
           response.data.data.forEach((ele, ix)=> {
             response.data.data[ix].lastMessage.count = 0;
@@ -105,9 +105,9 @@ class MensajesScreen extends React.Component {
             chats: response.data.data,
             isFetching: false,
             refreshing: false,
-            ws: new WebSocket(URL, response.data.user_id.toString()),
+            
           });
-          console.log('TEST2')
+          return response.data;
 
       } else {
         console.log(response);
@@ -216,10 +216,16 @@ class MensajesScreen extends React.Component {
 
   async componentDidMount() {
     this._isMounted = true;
-    this._onFocusListener = this.props.navigation.addListener('didFocus', (payload) => {
-      this._onRefresh();
+    this._onFocusListener = this.props.navigation.addListener('didFocus', async (payload) => {
+      await this.getUserChats();
     });
-    await this.getUserChats();
+
+    const user_data = await this.getUserChats();
+    let URL = 'ws://'+WS_HOST+':'+WS_PORT+'/user_main/'+user_data.user_id;
+    console.log(this.state.user_data)
+    this.setState({
+      ws: new WebSocket(URL, user_data.user_id.toString())
+    })
     
     if(!this.state.isFetching) {
       console.log(this.state);

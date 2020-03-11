@@ -53,13 +53,13 @@ class TheChat extends React.Component {
     };
   };
 
-  componentWillUnmount(){    
+  async componentWillUnmount(){    
     this.state.ws.close();
     this.state.ws_to_main.close();
     this.keyboardDidShowListener.remove();
     this.keyboardDidHideListener.remove();
     this._isMounted = false;
-    //await this.readMessages();
+    await this.readMessages();
   }
 
   _keyboardDidShow() {
@@ -156,9 +156,9 @@ class TheChat extends React.Component {
   }
 
   componentDidMount() {
-    this.getReceiverPushToken();
-    this.readMessages();
+    //this.getReceiverPushToken();
     this._isMounted = true;
+    this.readMessages();
     this.keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
       this._keyboardDidShow,
@@ -221,11 +221,11 @@ class TheChat extends React.Component {
       channel: this.state.thisChannel
     }
 
-    this.addMessage(message)
+    this.addMessage(message)//this is for front
 
     AsyncStorage.getItem('id_token').then((token) => {
       if(token) {
-        this.sendPush(message, token);
+        //this.sendPush(message, token);
         let axios_config = {
           method: 'POST',
           url: API_URL_PORT+'/new_message',
