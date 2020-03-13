@@ -3,13 +3,14 @@ import axios from 'axios';
 import { StyleSheet, FlatList, View, Button, Alert, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
 import { WS_HOST, WS_PORT, API_URL_PORT} from '../constants/Config';
-import { Left, Body, Right, Thumbnail, ListItem, Text, Badge } from 'native-base';
+import { Left, Body, Right, Thumbnail, ListItem, Text } from 'native-base';
 import { TouchableOpacity, ScrollView } from 'react-native-gesture-handler';
 import GoTo from '../constants/navigate';
 import AddChat from '../components/AddChat'
-import { Icon } from 'react-native-elements'
+import { Icon, Avatar, Badge, withBadge } from 'react-native-elements'
 import { Actions } from 'react-native-router-flux';
 import update from 'immutability-helper';
+import {parseDate} from '../helpers/dateParse'
 
 let navigated = false;
 
@@ -34,10 +35,6 @@ class MensajesScreen extends React.Component {
   _onRefresh = () => {
     this.setState({refreshing: true});
     this.getUserChats();
-  }
-
-  onEnter(params) {
-    console.log(params)
   }
 
   static navigationOptions = ({ navigation, navigationOptions }) => {
@@ -145,7 +142,7 @@ class MensajesScreen extends React.Component {
   }
 
   renderItem = ({item}) => {
-    
+    var textAndDate = parseDate(item)
     return (
       <TouchableOpacity
         ref={component => this._touchable = component}
@@ -173,17 +170,24 @@ class MensajesScreen extends React.Component {
         }}
       >
         <ListItem avatar>
-              <Left>
+              <Left style={{maxHeight: 70}}>
                 <Thumbnail source={{ uri: 'https://i0.wp.com/wipy.tv/wp-content/uploads/2019/10/Nueva-imagen-de-Avatar-2.jpg?w=1000&ssl=1' }} />
               </Left>
-              <Body>
+              <Body style={{height: 70}}>
                 <Text >{item.firstName + ' ' + item.lastName}</Text>
-                <Text note>{item.lastMessage[0] ? item.lastMessage[0][0].substring(0, 17) + ' ...' : 'Start the chat'}</Text>
+                <Text note>{textAndDate.lastMessage}</Text>
               </Body>
-              <Right>
-                <Text note>{item.lastMessage[0] ? item.lastMessage[0][1] : null}</Text>
-                {item.unreaded > 0 ? <Text style={{color:'#29c7ac', fontWeight:'800'}}> {item.unreaded} </Text> : null}
+              <Right style={{height: 70}}>
+                
+                <Body style={{width: 80, paddingLeft: 30}}>
+                  <Text note style={{fontSize: 13}}>{textAndDate.theDate}</Text>
+                  {item.unreaded > 0 ? 
+                  <Badge value={item.unreaded > 99 ? '99+' : item.unreaded} status="primary" badgeStyle={{marginTop: 7}}>
+                    <Text style={{color:'#fff', fontWeight:'400', fontSize: 12}}> {item.unreaded} </Text>
+                  </Badge> : null}
+                </Body>
               </Right>
+              
         </ListItem>
       </TouchableOpacity>
     );
@@ -247,11 +251,10 @@ class MensajesScreen extends React.Component {
           if(user.id == message.user_transmitter) {
             
             user.unreaded++;
-            user.lastMessage[0] = [message.message, 'now']
+            user.lastMessage[0] = [message.message, 'Now']
             this.setState({isFetching: false})
           }
         })
-        console.log(this.state);  
       }
 
       this.state.ws.onclose = () => {
@@ -260,19 +263,17 @@ class MensajesScreen extends React.Component {
         // this.setState({
         //   ws: new WebSocket(this.state.ws_url),
         // })
-        if(this._isMounted){
-          this._onRefresh()
-        }
+        // if(this._isMounted){
+        //   this._onRefresh()
+        // }
       }
       this.state.ws.onerror = () => {
         //Alert.alert('WS ERROR from mensajesScreen. Reconnecting...');
         console.log('WS ERROR from mensajesScreen. Reconnecting...');
-        // this.setState({
-        //   ws: new WebSocket(this.state.ws_url),
-        // })
-        if(this._isMounted){
-          this._onRefresh()
-        }
+        this.state.ws.close()
+        this.setState({
+          ws: new WebSocket(this.state.ws_url),
+        })
       }
     }
   }

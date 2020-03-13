@@ -3,6 +3,7 @@ import axios from 'axios';
 import { FlatList, StyleSheet, View, Text, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity, Keyboard, Dimensions, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
 import { WS_HOST, WS_PORT, API_URL_PORT } from '../constants/Config'
+import ChatBubble from '../components/ChatBubble'
 
 const {StatusBarManager} = NativeModules;
 
@@ -27,7 +28,7 @@ class TheChat extends React.Component {
     let URL_TO_MAIN = 'ws://'+WS_HOST+':'+WS_PORT+'/user_main/'+this.props.navigation.state.params.receiver;
     URL = URL + CHN;
     var protocole = {user_id_ws: this.props.navigation.state.params.user_id, receiver_id_ws: this.props.navigation.state.params.receiver}
-    var protpParsed = JSON.stringify(protocole);
+    
     this.state = {
       user_id: this.props.navigation.state.params.user_id,
       receiver_id: this.props.navigation.state.params.receiver,
@@ -38,14 +39,15 @@ class TheChat extends React.Component {
       thisChannel: CHN,
       message: '',
       keyBoardHidden: '', 
-      statusBarHeight: 0
+      statusBarHeight: 0, 
+      writing: false,
     }
     //console.log(this.state);
     
   }
 
   static navigationOptions = ({ navigation }) => {
-    console.log(navigation, "ACAAAx")
+    
     return {      
       title: navigation.state.params.itemData.firstName +' '+ navigation.state.params.itemData.lastName  ,
       headerStyle: {
@@ -58,12 +60,12 @@ class TheChat extends React.Component {
 
   async componentWillUnmount(){    
     this.state.ws.close();
-    this.statusBarListener.remove();
+    //this.statusBarListener.remove();
     this.state.ws_to_main.close();
     this.keyboardDidShowListener.remove();
     this.keyboardDidHideListener.remove();
-    this._isMounted = false;
     await this.readMessages();
+    this._isMounted = false;
   }
 
   _keyboardDidShow() {
@@ -188,19 +190,22 @@ class TheChat extends React.Component {
     this.state.ws.onmessage = evt => {
       // on receiving a message, add it to the list of messages
       let message = JSON.parse(evt.data)
-      //console.log(message);
-      this.addMessage(message, true)
+      console.log(message);
+      if(message.toSend) {
+        this.addMessage(message, true)
+      } else {
+        //Working, but with bugs
+        // if(message.writing == true) {
+        //   this.addMessage(message, true, 'writing')
+        // } else {
+        //   this.addMessage(message, true, 'noWriting')
+        // }
+      }
     }
 
     this.state.ws.onclose = () => {
       console.log('WS disconected from theChat: ' + this.state.user_id);
       //Alert.alert('WS disconected from theChat: ' + this.state.user_id);
-      if(this._isMounted) {
-        this.setState({
-          ws: new WebSocket(URL),
-          ws_to_main: new WebSocket(URL_TO_MAIN),
-        })
-      }
     }
 
     this.state.ws.onerror = () => {
@@ -215,20 +220,34 @@ class TheChat extends React.Component {
 
 
 
-  addMessage = (message, justAddOnFront = false) => {
-    this._isMounted ? this.setState(state => ({ messages: [message, ...state.messages] })) : null;
+  addMessage = (message, justAddOnFront = false, writing = false) => {
+    console.log(writing);
+    if(message.toSend) {
+      this._isMounted ? this.setState(state => ({ messages: [message, ...state.messages] })) : null;
+    }
+    if(writing) {
+      if(writing == 'writing') {
+        message.message = 'Writing...'
+        this._isMounted ? this.setState(state => ({ messages: [message, ...state.messages] })) : null;
+      } else {
+        var array = [...this.state.messages];
+        console.log(array);
+        this._isMounted ? this.setState(state => ({ messages: array.slice(1) })) : null;
+      }
+    }
   }
 
   submitMessage = (messageString) => {
     // on submitting the ChatInput form, send the message, add it to the list and reset the input
-    //console.log(this.state.messages.length);
-    const message = { 
-      //id: this.state.messages.length + 1,
+    
+    const message = {
+      toSend: true,
       name_last: this.props.navigation.state.params.writer.firstName + ' ' + this.props.navigation.state.params.writer.lastName,
       user_transmitter: this.props.navigation.state.params.user_id,
       message: messageString, 
       user_receiver: this.props.navigation.state.params.receiver,
-      channel: this.state.thisChannel
+      channel: this.state.thisChannel,
+      createdAt: new Date(Date.now())
     }
 
     this.addMessage(message)//this is for front
@@ -307,18 +326,39 @@ class TheChat extends React.Component {
     let iSend;
     this.state.user_id == item.user_transmitter ? iSend = true : iSend = false;
     return (
-      <View style={styles.row}>
-        {/* <Text style={styles.sender}>{item.user_transmitter}</Text> */}
-        <Text style={iSend ? styles.iMessage : styles.message}>{item.message}</Text>
-      </View>
+      // <View style={styles.row}>
+      //   {/* <Text style={styles.sender}>{item.user_transmitter}</Text> */}
+      //   <Text style={iSend ? styles.iMessage : styles.message}>{item.message}</Text>
+      // </View>
+      <ChatBubble
+        message={item.message}
+        sender={item.user_transmitter}
+        iSend={iSend}
+        allData={item}
+        
+      />
     );
   }
 
   keyExtractor = (item, index) => index.toString();
+  
+  writing = (state) => {
+    if(state) {
+      this.state.ws.send(JSON.stringify({writing: true}))
+    } else {
+      this.state.ws.send(JSON.stringify({writing: false}))
+    }
+  }
 
   render() {
     const windowHeight = Dimensions.get('window').height;
-
+    const disableInput = () => {
+      if (!this.state.message.replace(/\s/g, '').length) {
+        return true;
+      } else {
+        return false;
+      }
+    }
     return (
       <View style={styles.container}>
         <FlatList
@@ -336,18 +376,19 @@ class TheChat extends React.Component {
               value={this.state.message}
               style={this.state.inputFocus ? styles.inputFocus : styles.input}
               onChangeText={text => this._isMounted ? this.setState({message: text}) : null}
-              onFocus={e => this._isMounted ?  this.setState({inputFocus: true}) : null}
-              onBlur={e => this._isMounted ? this.setState({inputFocus: false}) : null}
+              onFocus={e => this._isMounted ?  this.setState({inputFocus: true, writing: this.writing(true)}) : null}
+              onBlur={e => this._isMounted ? this.setState({inputFocus: false, writing: this.writing(false)}) : null}
               placeholder={'Enter message...'}
             />
             <TouchableOpacity 
+              disabled={disableInput()}
               onPress={e => {
                 e.stopPropagation()
-                this.submitMessage(this.state.message)
+                this.submitMessage(this.state.message.trim())
                 this._isMounted ? this.setState({ message: '' }) : null
               }
             }>
-              <Text style={styles.send}>Send</Text>
+              <Text style={[styles.send, {color: disableInput() ? 'grey' : 'lightseagreen'}]}>Send</Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -369,12 +410,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee',
   },
   input: {
+    color: 'black',
     paddingHorizontal: 20,
     paddingVertical: 10,
     fontSize: 18,
     flex: 1,
   },
   inputFocus: {
+    color: 'black',
     paddingHorizontal: 20,
     paddingVertical: 10,
     fontSize: 18,
@@ -404,7 +447,6 @@ const styles = StyleSheet.create({
   },
   send: {
     alignSelf: 'center',
-    color: 'lightseagreen',
     fontSize: 16,
     fontWeight: 'bold',
     padding: 20,

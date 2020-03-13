@@ -213,11 +213,7 @@ class AddChatView extends React.Component {
               </Left>
               <Body>
                 <Text >{item.firstName + ' ' + item.lastName}</Text>
-                <Text note>{item.lastMessage[0] ? item.lastMessage[0][0] : 'Start the chat'}</Text>
               </Body>
-              <Right>
-                <Text note>{item.lastMessage[0] ? item.lastMessage[0][1] : null}</Text>
-              </Right>
         </ListItem>
       </TouchableOpacity>
     );

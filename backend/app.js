@@ -1,6 +1,6 @@
+//MAIN TODO: CLEAN CODE REPLACING ALL PROMISES FOR ASYNC/AWAIT FUNCTIONS
 const path = require('path')
 var envi = require('dotenv').config({ path: path.resolve(__dirname, '../.env') })
-console.log(envi);
 var models = require('./database/models');
 const WebSocket = require('ws');
 const jwt = require('jsonwebtoken')
@@ -11,7 +11,6 @@ var bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const Nexmo = require('nexmo');
 
-//app.use(express.json());
 app.use(cors());
 app.use(bodyParser.urlencoded({ limit: '1000mb',parameterLimit: 100000,extended: true  }));
 app.use(bodyParser.json({ limit: '1000mb'}))
