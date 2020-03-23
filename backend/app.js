@@ -37,20 +37,22 @@ wss.on('connection', (ws, req) => {
     console.log(channels);
 
     ws.on('message', function incoming(message) {
-        if(channels[req.url]) {
+        console.log(channels[req.url], req.url)
+        
+            console.log('ENTRO', message)
             channels[req.url].forEach(function each(client) {
-                console.log(client);
+                //console.log(client);
                 //client is a WebSocket
                 if (client !== ws && client.readyState === WebSocket.OPEN) {
                     client.send(message);
                 }
             });
-        }
+        
     });
 
     ws.on('close', function (message) {
         //ws.protocol es el cliente que esta haciendo el request
-        console.log(req.url, '/user_main/'+ws.protocol, 'AKA TEST')
+        console.log('request url: ' + req.url, 'Se cerro el websocket ' + ws.protocol)
         
         if(req.url.includes('user_main')) {
             console.log('includes user main')

@@ -2,8 +2,9 @@
   "name": "thechat",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
+    "start": "nodemon ./bin/www",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -20,5 +21,8 @@
     "sequelize": "^5.21.3",
     "sequelize-cli": "^5.5.1",
     "ws": "^7.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
   }
 }

@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, AppState } from 'react-native';
 import { Router, Scene, Tabs, ActionConst, Actions, Stack } from 'react-native-router-flux';
-import MensajesScreen from './navigation/MensajesScreen';
+import { MensajesScreen } from './navigation/MensajesScreen';
 import ConfigScreen from './navigation/ConfigScreen';
 import TheChat from './navigation/TheChat';
 import NotifTest from './navigation/NotifTest';
@@ -20,7 +20,9 @@ class App extends Component {
 
   constructor(props){
     super(props);
-    //console.log(Cellular.allowsVoip)
+    this.state = {
+      
+    }
   }
 
   disc = () => {
@@ -58,9 +60,12 @@ class App extends Component {
     )
   }
 
-  componentDidMount() {
+  // componentDidMount() {
     
-  }
+  // }
+  // componentWillUnmount() {
+    
+  // }
   
   render() {
     return (

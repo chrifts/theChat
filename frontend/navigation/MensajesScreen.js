@@ -1,6 +1,6 @@
 import React from 'react';
 import axios from 'axios';
-import { StyleSheet, FlatList, View, Button, Alert, RefreshControl } from 'react-native';
+import { StyleSheet, FlatList, View, Button, Alert, RefreshControl, AppState } from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
 import { WS_HOST, WS_PORT, API_URL_PORT} from '../constants/Config';
 import { Left, Body, Right, Thumbnail, ListItem, Text } from 'native-base';
@@ -11,9 +11,9 @@ import { Icon, Avatar, Badge, withBadge } from 'react-native-elements'
 import { Actions } from 'react-native-router-flux';
 import update from 'immutability-helper';
 import {parseDate} from '../helpers/dateParse'
-
-let navigated = false;
-
+import { createStore } from 'redux'
+import store from "../store/index";
+import { addArticle } from "../actions/index";
 
 class MensajesScreen extends React.Component {
   _isMounted = false;
@@ -27,9 +27,43 @@ class MensajesScreen extends React.Component {
       isFetching: true,
       user_id: '',
       ws: '',
+      appState: AppState.currentState,
       backRefresh: false,
     }
-    //this.getUserChats();
+    this._onFocusListener = this.props.navigation.addListener('didFocus', async (payload) => {
+      await this.getUserChats();
+    });
+  }
+
+  _handleAppStateChange = async (nextAppState) => {
+    if (
+      this.state.appState.match(/inactive|background/) &&
+      nextAppState === 'active'
+    ) {
+      console.log('App has come to the foreground!');
+      const user_data = await this.getUserChats()
+      if(this.state.ws.readyState !== 1) {
+        let URL = 'ws://'+WS_HOST+':'+WS_PORT+'/user_main/'+user_data.user_id;
+        this.setState({
+          ws: new WebSocket(URL, user_data.user_id.toString())
+        })
+      }
+      
+    } else {
+      console.log('App is gone to foreground');
+      // this.state.ws.close()      
+    }
+    this.setState({appState: nextAppState});
+  };
+
+  updateChat = (data) => {
+    var newChat = [...this.state.chats]
+    this.state.chats.forEach((ele, ix)=>{
+      if(ele.id == data.user_receiver) {
+        newChat[ix].lastMessage[0] = [data.message]
+      }
+    })
+    this.setState({chats: newChat})
   }
 
   _onRefresh = () => {
@@ -94,6 +128,8 @@ class MensajesScreen extends React.Component {
           //console.log(this.state)
         }
 
+        //store.dispatch( addArticle({ main_state: response.data }) );
+
         this.setState(
           {
             ws_url: URL,
@@ -104,6 +140,7 @@ class MensajesScreen extends React.Component {
             refreshing: false,
             
           });
+          
           return response.data;
 
       } else {
@@ -175,12 +212,12 @@ class MensajesScreen extends React.Component {
               </Left>
               <Body style={{height: 70}}>
                 <Text >{item.firstName + ' ' + item.lastName}</Text>
-                <Text note>{textAndDate.lastMessage}</Text>
+                <Text note>{item.typing ? 'Typing...' : textAndDate.lastMessage}</Text>
               </Body>
               <Right style={{height: 70}}>
                 
-                <Body style={{width: 80, paddingLeft: 30}}>
-                  <Text note style={{fontSize: 13}}>{textAndDate.theDate}</Text>
+                <Body style={{width: 85, paddingLeft: 30}}>
+                  <Text note style={{fontSize: 11}}>{textAndDate.theDate}</Text>
                   {item.unreaded > 0 ? 
                   <Badge value={item.unreaded > 99 ? '99+' : item.unreaded} status="primary" badgeStyle={{marginTop: 7}}>
                     <Text style={{color:'#fff', fontWeight:'400', fontSize: 12}}> {item.unreaded} </Text>
@@ -194,6 +231,7 @@ class MensajesScreen extends React.Component {
   }
 
   drawList = () => {
+      
       return (     
         //User ScrollView for enable scroll refresh 
         <View style={{flex: 1}}
@@ -203,6 +241,7 @@ class MensajesScreen extends React.Component {
             onRefresh={this._onRefresh}
           />
         }>
+          
           {this.state.chats ? <FlatList
             data={this.state.chats}
             renderItem={this.renderItem}
@@ -213,74 +252,97 @@ class MensajesScreen extends React.Component {
   }
 
   render() { 
-    return(
+    return( 
       this.state.isFetching ? <Text>Cargando :)</Text> : this.drawList()
     );
   }
 
-  async componentDidMount() {
-    this._isMounted = true;
-    this._onFocusListener = this.props.navigation.addListener('didFocus', async (payload) => {
-      await this.getUserChats();
-    });
 
+
+  async componentDidMount() {
+    AppState.addEventListener('change', this._handleAppStateChange);
+    this._isMounted = true;
     const user_data = await this.getUserChats();
+
+    //store.dispatch( addArticle({ user_data: user_data }) );
+    //console.log(store.getState())
+
     let URL = 'ws://'+WS_HOST+':'+WS_PORT+'/user_main/'+user_data.user_id;
-    console.log(this.state.user_data)
+    //console.log(this.state.user_data)
     this.setState({
       ws: new WebSocket(URL, user_data.user_id.toString())
     })
     
     if(!this.state.isFetching) {
-      console.log(this.state);
+      //console.log(this.state);
       this.state.ws.onopen = () => {
         // on connecting, do nothing but log it to the console
-        console.log('connected '+ this.state.user_id+' in MensajesScreen ' + 'channel: ' + this.state.ws_url)
+        //console.log('connected '+ this.state.user_id+' in MensajesScreen ' + 'channel: ' + this.state.ws_url)
         //Alert.alert('connected '+ this.state.user_id+' in MensajesScreen ' + 'channel: ' + this.state.ws_url)
       }
       
       this.state.ws.onmessage = evt => {
         // on receiving a message, add it to the list of messages
         let message = JSON.parse(evt.data)
-        console.log(message);
+        //console.log(message);
+        if(message.toSend) {
+          this.state.chats.forEach((user, ix)=>{
+            if(user.id == message.user_transmitter) {
+              //user.unreaded++;
+              // user.lastMessage[0] = [message.message, 'Now']
+              // this.setState({isFetching: false})
+              let chats = [...this.state.chats];
+              chats[ix].lastMessage[0] = [message.message, 'Now']
+              chats[ix].unreaded++; 
+              this.setState({chats: chats});
+            }
+          })
+        }
+        if(message.writing == true) {
+          this.state.chats.forEach((user, ix)=>{
+            if(user.id == message.user_id) {
+              let chats = [...this.state.chats];
+              chats[ix].typing = true;
+              this.setState({chats: chats});
+            } 
+          })
+        } else {
+          this.state.chats.forEach((user, ix)=>{
+            if(user.id == message.user_id) {
+              let chats = [...this.state.chats];
+              chats[ix].typing = false;
+              this.setState({chats: chats});
+            } 
+          })
+        }
         
-        //Alert.alert(message.message)
-        this.setState({isFetching: true})
-        
-        this.state.chats.forEach((user, ix)=>{
-          if(user.id == message.user_transmitter) {
-            
-            user.unreaded++;
-            user.lastMessage[0] = [message.message, 'Now']
-            this.setState({isFetching: false})
-          }
-        })
       }
 
       this.state.ws.onclose = () => {
         //Alert.alert('WS disconected from mensajesScreen. Reconnecting...');
-        console.log('WS disconected from mensajesScreen. Reconnecting...');
+        //console.log('WS disconected from mensajesScreen. Reconnecting...');
         // this.setState({
         //   ws: new WebSocket(this.state.ws_url),
         // })
-        // if(this._isMounted){
-        //   this._onRefresh()
-        // }
+        if(this._isMounted){
+          this._onRefresh()
+        }
       }
       this.state.ws.onerror = () => {
         //Alert.alert('WS ERROR from mensajesScreen. Reconnecting...');
-        console.log('WS ERROR from mensajesScreen. Reconnecting...');
-        this.state.ws.close()
-        this.setState({
-          ws: new WebSocket(this.state.ws_url),
-        })
+        
+        //this.state.ws.close()
+        // this.setState({
+        //   ws: new WebSocket(this.state.ws_url),
+        // })
       }
     }
   }
   componentWillUnmount() {
-    this.state.ws.close()
+    AppState.removeEventListener('change', this._handleAppStateChange);
+    //this.state.ws.close()
     //this._onRefresh();
   }
 }
   
-export default MensajesScreen;
+export {MensajesScreen};
